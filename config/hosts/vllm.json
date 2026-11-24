@@ -1,0 +1,18 @@
+{
+	"providers": {
+		"vllm": {
+			"api": "openai-completions",
+			"baseUrl": "http://localhost:8000/v1",
+			"apiKey": "vllm",
+			"models": [
+				{
+					"id": "REPLACE-ME",
+					"name": "vLLM model",
+					"reasoning": true,
+					"contextWindow": 32768,
+					"maxTokens": 8192
+				}
+			]
+		}
+	}
+}

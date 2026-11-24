@@ -1,0 +1,98 @@
+# NOTICE
+
+## 來源
+
+`runtimes/mom/` 衍生自 **[badlogic/pi-mono](https://github.com/badlogic/pi-mono)**
+的 `packages/mom`，MIT 授權，著作權 © 2025 Mario Zechner。
+
+取得的版本：**v0.70.6**，取自 commit `0ed0d4343^`
+——也就是 `0ed0d4343 "remove mom and pods packages"` 的前一個 commit。
+
+## 為什麼另開一個 repo，而不是 fork
+
+**上游已經把 `packages/mom` 整包刪掉了。** `badlogic/pi-mono` 的 main 現在
+只有 agent / ai / client / coding-agent / evals / protocol / server /
+session-backends / telemetry / tui 十個 package，沒有 mom，也沒有任何 Slack 程式碼。
+
+fork 一個已經不含這份程式碼的 monorepo，得到的是 40MB 的歷史包袱和一個
+永遠不會有 mom 更新的上游。所以這裡的做法是：把 `packages/mom` 抽出來、
+依賴改指 npm 上發行的套件、只保留實際會用到的部分。
+
+## 與上游 v0.70.6 的差異
+
+### 1. 模型可設定（`runtimes/mom/src/agent.ts`）
+
+上游把模型寫死：
+
+```js
+// Hardcoded model for now - TODO: make configurable (issue #63)
+const model = getModel("anthropic", "claude-sonnet-4-5");
+```
+
+本 repo 改成由 `LLM_PROVIDER` / `LLM_MODEL` 決定，兩者都沒設才退回上游的預設。
+`ModelRegistry` 也改成吃一個明確的 `models.json` 路徑：
+
+```
+1. MOM_MODELS_JSON        ← bin/start.sh 指到 config/hosts/<host>.json
+2. $HOME/.pi/mom/models.json
+3. <cwd>/models.json      ← 上游原本的 fallback
+```
+
+API key 取得從「只認 anthropic」改成依 provider：
+`modelRegistry.getApiKeyForProvider(provider)`。
+
+### 2. 思考內容不進主頻道（`runtimes/mom/src/agent.ts`）
+
+上游同時送兩份：
+
+```js
+queue.enqueueMessage(`_${thinking}_`, "main", "thinking main");
+queue.enqueueMessage(`_${thinking}_`, "thread", "thinking thread", false);
+```
+
+本 repo 只留 thread。推理內容會帶出最終回答刻意省略的東西——檔案路徑、
+system prompt、記憶、其他訊息的 context——而主頻道裡任何人都看得到。
+
+### 3. 建置工具
+
+上游用 `tsgo`（`@typescript/native-preview`）與 `shx`，兩者都宣告在 monorepo 根的
+devDependencies。本 repo 改用 `tsc` + `rm -rf` + `chmod`，少兩個依賴。
+
+### 4. 移除的檔案
+
+`dev.sh`、`docker.sh` —— 上游自己的啟動腳本。功能比 `bin/start.sh` 少
+（沒有 HOME 隔離、沒有 `.env` 載入、沒有重複啟動防護），留著等於提供第二條路徑。
+上游的 `README.md` 保留為 `runtimes/mom/UPSTREAM-README.md`。
+
+### 5. 套件名稱
+
+`@mariozechner/pi-mom` → `pi-mom-local-runtime-mom`，並設 `"private": true`。
+這是別人套件的修改版，不應該發布到原作者的命名空間下。
+
+### 6. 本機產圖（pi-mom-local 新增）
+
+上游沒有的功能。產圖本身是 repo 內的獨立套件 `packages/image-router`（不依賴上游程式碼）；
+mom 這邊的修改是：`slack.ts` 的 `MomHandler` 多一個選用的 `intercept()`，`main.ts` 在 agent
+開跑前呼叫 `prepareForChat()` 讓出 GPU，Slack 的接線在 `image-router.ts`、`slack-image.ts`、
+`tools/image.ts`。
+
+模型權重不在 repo 內，由 `bin/image-setup.sh` 下載，各自的授權：
+- FLUX.2 [klein] 4B（Black Forest Labs）— Apache-2.0；GGUF 量化版 leejet/FLUX.2-klein-4B-GGUF
+- Qwen3-4B-abliterated（mlabonne，GGUF 由 mradermacher 量化）— Apache-2.0，基於 Qwen/Qwen3-4B
+- stable-diffusion.cpp（leejet）— MIT，使用者自行編譯，不隨 repo 散布
+- Party Time v2.1（Klein 4B，Civitai model 2458332）— 選用的 NSFW LoRA，預設不下載也不啟用（`image-setup.sh --with-nsfw`）；作者授權允許商用與衍生，只在明確要求時套用
+
+### 7. 清除指令（pi-mom-local 新增）
+
+`/clear`、`/clear-record`、`!clear-slack`、`!clear-all`（`clear.ts`、`slack-clear.ts`）。
+`context.ts` 的補同步會跳過清除範圍內的訊息。
+
+## 依賴
+
+`@mariozechner/pi-agent-core`、`pi-ai`、`pi-coding-agent`（皆 `^0.70.6`，MIT）
+**未修改**，直接使用 npm 上的發行版。
+
+這三個套件在 npm 上已標記 deprecated，作者請大家改用
+`@earendil-works/*`。本 repo 目前仍固定在 `@mariozechner/*@0.70.6`，
+因為 mom 是對著這組 API 寫的。要不要跟著搬家是一個獨立決策，
+`bin/check-upstream.sh` 會把兩邊的版本一起列出來。

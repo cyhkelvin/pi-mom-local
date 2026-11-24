@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- pi-mom-local 常駐。由 bin/install-launchd.sh 代換路徑後安裝到 ~/Library/LaunchAgents。
+     KeepAlive=true：process 一結束就重啟——mom 斷線超時會自己 exit(1)，靠這個接手。
+     ThrottleInterval=60：docker 沒起來時會啟動失敗，限制重試頻率避免刷屏。 -->
+<plist version="1.0"><dict>
+  <key>Label</key><string>local.pi-mom</string>
+  <key>ProgramArguments</key><array><string>__REPO_ROOT__/bin/start.sh</string></array>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>ThrottleInterval</key><integer>60</integer>
+  <!-- launchd 給的 PATH 只有 /usr/bin:/bin:/usr/sbin:/sbin，找不到 node 與 docker -->
+  <key>EnvironmentVariables</key><dict><key>PATH</key><string>__PATH__</string></dict>
+  <!-- start.sh 自己 tee 進 mom.log，這裡只留啟動失敗（redirect 之前）的訊息 -->
+  <key>StandardOutPath</key><string>/dev/null</string>
+  <key>StandardErrorPath</key><string>__LOG_DIR__/launchd.err</string>
+</dict></plist>

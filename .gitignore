@@ -1,0 +1,35 @@
+# --- 機密：以下絕不進版控 ---
+# token 連 commit 歷史都不能出現：歷史一旦公開就洗不掉。
+config/agent.env
+*.env
+!*.env.example
+*.bak
+
+# --- mom 的執行期資料（含真實 Slack 對話與使用者記憶）---
+# mom 會在 workingDir 下為每個 Slack 頻道建一個以頻道 ID 命名的目錄
+/*/log.jsonl
+/*/context.jsonl
+/*/last_prompt.jsonl
+/*/MEMORY.md
+MEMORY.md
+state/
+workspace/
+logs/
+backup/
+
+# --- 模型權重（FLUX、LoRA、NSFW LoRA）：一律放在 ~/.pi-mom-local/models/，不進版控 ---
+*.safetensors
+*.gguf
+*.ckpt
+*.pt
+*.pth
+*.sft
+models/
+
+# --- 建置產物 ---
+node_modules/
+dist/
+*.tsbuildinfo
+
+# --- 其他 ---
+.DS_Store

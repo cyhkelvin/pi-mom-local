@@ -1,0 +1,33 @@
+{
+	"name": "@pi-mom-local/image-router",
+	"version": "0.1.0",
+	"description": "Local image generation for pi-mom-local: FLUX.2 Klein via stable-diffusion.cpp sd-server, sharing one GPU with the chat model",
+	"private": true,
+	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
+	"files": ["dist"],
+	"scripts": {
+		"clean": "rm -rf dist",
+		"build": "tsc -p tsconfig.json",
+		"test": "npm run build && node --test --experimental-strip-types test/*.test.ts"
+	},
+	"devDependencies": {
+		"@types/node": "^24.3.0",
+		"typescript": "^5.7.3"
+	},
+	"contributors": ["cyhkelvin"],
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/cyhkelvin/pi-mom-local.git",
+		"directory": "packages/image-router"
+	},
+	"engines": { "node": ">=20.0.0" }
+}

@@ -1,0 +1,18 @@
+{
+	"providers": {
+		"llamacpp": {
+			"api": "openai-completions",
+			"baseUrl": "http://localhost:8080/v1",
+			"apiKey": "llamacpp",
+			"models": [
+				{
+					"id": "REPLACE-ME",
+					"name": "llama.cpp model",
+					"reasoning": true,
+					"contextWindow": 32768,
+					"maxTokens": 8192
+				}
+			]
+		}
+	}
+}

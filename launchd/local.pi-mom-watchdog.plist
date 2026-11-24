@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 保底監看。每 5 分鐘跑一次 bin/watchdog.sh，只在「process 活著但 socket 死了」時介入。
+     休眠期間不會執行，喚醒後 launchd 會補跑一次——正好是最需要檢查的時機。 -->
+<plist version="1.0"><dict>
+  <key>Label</key><string>local.pi-mom-watchdog</string>
+  <key>ProgramArguments</key><array><string>__REPO_ROOT__/bin/watchdog.sh</string></array>
+  <key>RunAtLoad</key><true/>
+  <key>StartInterval</key><integer>300</integer>
+  <key>EnvironmentVariables</key><dict><key>PATH</key><string>__PATH__</string></dict>
+  <key>StandardOutPath</key><string>/dev/null</string>
+  <key>StandardErrorPath</key><string>__LOG_DIR__/launchd.err</string>
+</dict></plist>

@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+# runtime 契約：啟動這個 runtime。由 bin/start.sh 呼叫，設定透過環境變數傳入。
+#
+# 需要的環境變數：
+#   REPO_ROOT CHANNELS_DIR WORKSPACE PI_HOME SANDBOX SANDBOX_IMAGE
+#   MOM_MODELS_JSON LLM_PROVIDER LLM_MODEL
+#   MOM_SLACK_APP_TOKEN MOM_SLACK_BOT_TOKEN
+#   SEARCH_PROVIDER BRAVE_SEARCH_API_KEY TAVILY_API_KEY（可空）
+set -euo pipefail
+cd "$(dirname "$0")"
+
+[ -f dist/main.js ] || { echo "→ 尚未建置，先跑 build"; ./build; }
+
+# --- 內建 skill 同步 ---------------------------------------------------------
+# skill 的載入端與執行端在兩個不同的地方，這裡要讓它們對上：
+#   載入：agent.ts 讀 host 的 $CHANNELS_DIR/skills/（因為 hostWorkspacePath = channels 的上層）
+#   執行：agent 的 bash 在容器裡跑，看到的是 /workspace/skills/
+# 所以下面 docker run 會把 $CHANNELS_DIR/skills 單獨掛到 /workspace/skills。
+# repo 的 skills/ 是出廠版本，每次啟動覆蓋同名目錄；agent 自己建的其他 skill 不動。
+SKILLS_SRC="$REPO_ROOT/skills"
+SKILLS_DST="$CHANNELS_DIR/skills"
+mkdir -p "$SKILLS_DST"
+if [ -d "$SKILLS_SRC" ]; then
+	for d in "$SKILLS_SRC"/*/; do
+		[ -d "$d" ] || continue
+		name="$(basename "$d")"
+		rm -rf "$SKILLS_DST/$name"
+		cp -R "$d" "$SKILLS_DST/$name"
+		chmod +x "$SKILLS_DST/$name"/*.sh 2>/dev/null || true
+	done
+	echo "✓ 內建 skill 已同步（$(ls -1 "$SKILLS_SRC" | paste -sd, - | sed 's/,/, /g')）"
+fi
+
+# --- 沙箱容器 ---------------------------------------------------------------
+case "$SANDBOX" in
+	docker:*)
+		CONTAINER="${SANDBOX#docker:}"
+		docker info >/dev/null 2>&1 || { echo "✗ docker daemon 沒起來 → open -a Docker" >&2; exit 1; }
+
+		# 網路：沙箱要跟自架的 SearXNG 用容器名互相找得到，就必須掛在同一個
+		# user-defined bridge 上（預設 bridge 不提供 DNS 解析）。
+		# 即使沒用 searxng 也一律建立，省得切 provider 時行為不一致。
+		docker network inspect "$SANDBOX_NETWORK" >/dev/null 2>&1 \
+			|| docker network create "$SANDBOX_NETWORK" >/dev/null
+
+		# 選了 searxng 就把它帶起來——它是 search skill 的後端，不是可有可無
+		if [ "${SEARCH_PROVIDER:-}" = "searxng" ]; then
+			"$REPO_ROOT/bin/searxng.sh" up
+		fi
+
+		# image：Dockerfile 變了就重建。用內容雜湊當標籤，
+		# 比「檔案比 image 新」可靠——後者在 git checkout 之後會誤判。
+		DOCKERFILE="$REPO_ROOT/sandbox/Dockerfile"
+		DF_SHA="$(shasum -a 256 "$DOCKERFILE" | cut -c1-12)"
+		CUR_SHA="$(docker image inspect -f '{{index .Config.Labels "pi-mom.dockerfile"}}' \
+			"$SANDBOX_IMAGE" 2>/dev/null || echo "")"
+		if [ "$CUR_SHA" != "$DF_SHA" ]; then
+			echo "→ 建置沙箱 image $SANDBOX_IMAGE（Dockerfile $DF_SHA）"
+			docker build -q --label "pi-mom.dockerfile=$DF_SHA" \
+				-t "$SANDBOX_IMAGE" -f "$DOCKERFILE" "$REPO_ROOT/sandbox" >/dev/null
+		fi
+		IMAGE_ID="$(docker image inspect -f '{{.Id}}' "$SANDBOX_IMAGE")"
+
+		# 容器：image 換了、或 search 憑證換了，都要重建——
+		# 憑證是在 docker run 當下注入的，光重啟容器不會生效。
+		# 時區：容器預設是 UTC，agent 用 date 回答「現在幾點」會差 8 小時。
+		# alpine 沒裝 tzdata，所以用 POSIX 格式（CST-8 = UTC+8），不用 Asia/Taipei。
+		SANDBOX_TZ="${SANDBOX_TZ:-CST-8}"
+		SECRET_SHA="$(printf '%s|%s|%s|%s|%s|%s' "$SEARCH_PROVIDER" "${BRAVE_SEARCH_API_KEY:-}" \
+			"${TAVILY_API_KEY:-}" "${SEARXNG_URL:-}" "$SANDBOX_NETWORK" "$SANDBOX_TZ" \
+			| shasum -a 256 | cut -c1-12)"
+		if docker ps -a --format '{{.Names}}' | grep -qx "$CONTAINER"; then
+			WANT="$IMAGE_ID|$SECRET_SHA"
+			GOT="$(docker inspect -f '{{index .Config.Labels "pi-mom.image"}}|{{index .Config.Labels "pi-mom.secrets"}}' \
+				"$CONTAINER" 2>/dev/null || echo "")"
+			if [ "$WANT" != "$GOT" ]; then
+				echo "→ 沙箱設定有變，重建容器 $CONTAINER"
+				docker rm -f "$CONTAINER" >/dev/null
+			fi
+		fi
+
+		if docker ps -a --format '{{.Names}}' | grep -qx "$CONTAINER"; then
+			docker ps --format '{{.Names}}' | grep -qx "$CONTAINER" || docker start "$CONTAINER" >/dev/null
+		else
+			echo "→ 建立沙箱容器 $CONTAINER（$WORKSPACE → /workspace，skills → /workspace/skills）"
+			docker run -d --name "$CONTAINER" \
+				--label "pi-mom.image=$IMAGE_ID" \
+				--label "pi-mom.secrets=$SECRET_SHA" \
+				-v "$WORKSPACE:/workspace" \
+				-v "$SKILLS_DST:/workspace/skills" \
+				-w /workspace \
+				--network "$SANDBOX_NETWORK" \
+				-e "SEARCH_PROVIDER=$SEARCH_PROVIDER" \
+				-e "BRAVE_SEARCH_API_KEY=${BRAVE_SEARCH_API_KEY:-}" \
+				-e "TAVILY_API_KEY=${TAVILY_API_KEY:-}" \
+				-e "SEARXNG_URL=${SEARXNG_URL:-}" \
+				-e "TZ=$SANDBOX_TZ" \
+				"$SANDBOX_IMAGE" tail -f /dev/null >/dev/null
+		fi
+		echo "✓ 沙箱容器 $CONTAINER 就緒（image $SANDBOX_IMAGE）"
+		;;
+	host)
+		echo "⚠ sandbox=host：agent 的 bash 會直接跑在這台機器上" ;;
+	*)
+		echo "✗ 不認得的 SANDBOX：$SANDBOX（要 host 或 docker:<名稱>）" >&2; exit 1 ;;
+esac
+
+# --- 憑證隔離 ---------------------------------------------------------------
+# mom 用 os.homedir() 找 auth.json，換掉 HOME 就能讓 agent 讀不到你自己的憑證。
+# auth.json 不存在時 mom 會自動寫入 {}，不需要事先準備。
+export HOME="$PI_HOME"
+
+exec node dist/main.js --sandbox="$SANDBOX" "$CHANNELS_DIR"

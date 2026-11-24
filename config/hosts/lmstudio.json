@@ -1,0 +1,18 @@
+{
+	"providers": {
+		"lmstudio": {
+			"api": "openai-completions",
+			"baseUrl": "http://localhost:1234/v1",
+			"apiKey": "lm-studio",
+			"models": [
+				{
+					"id": "REPLACE-ME",
+					"name": "LM Studio model",
+					"reasoning": true,
+					"contextWindow": 32768,
+					"maxTokens": 8192
+				}
+			]
+		}
+	}
+}

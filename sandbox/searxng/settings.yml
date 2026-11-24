@@ -1,0 +1,33 @@
+# SearXNG 設定範本。__SECRET_KEY__ 由 bin/searxng.sh 在啟動時代換成隨機值，
+# 產生出來的實體檔放在 $STATE_DIR/searxng/settings.yml（不進版控）。
+#
+# 這份只寫「非預設值」，其餘沿用 image 內建的 settings.yml。
+use_default_settings: true
+
+general:
+  # 關掉統計頁與 metrics，這台只給 agent 用，不需要對人展示
+  enable_metrics: false
+
+server:
+  secret_key: "__SECRET_KEY__"
+  # ⚠ 這是最關鍵的一行。limiter 是擋機器人的，開著的話用 curl 打 API 會被 429。
+  # 之所以敢關：這個實例只掛在 docker 內網 pi-mom-net 上，沒有 publish 到主機埠，
+  # 外面連不到它。要改成對外開放就必須把它打開。
+  limiter: false
+  public_instance: false
+
+search:
+  # ⚠ 第二個關鍵。預設只開 html，不開 json 的話 API 會回 403，
+  # 而且錯誤訊息不會告訴你原因——這是這個整合最常踩的坑。
+  formats:
+    - html
+    - json
+  # 搜尋語言不鎖定，讓查詢字自己決定
+  autocomplete: ""
+  safe_search: 0
+
+outgoing:
+  # 上游引擎被問太快會擋，放慢一點比較不會吃 CAPTCHA
+  request_timeout: 10.0
+  max_request_timeout: 15.0
+  pool_connections: 20

@@ -1,0 +1,24 @@
+{
+  "query": "台北 天氣",
+  "number_of_results": null,
+  "results": [
+    {
+      "url": "https://www.cwa.gov.tw/V8/C/W/County/County.html?CID=63",
+      "title": "縣市預報 | 交通部中央氣象署 - 縣市預報 - 中央氣象 ...",
+      "content": "陰時多雲短暫陣雨，天氣整體舒適，但仍有降雨機率 今日白天（15日）天氣陰時多雲短暫陣雨，降雨機率30%，氣溫25至28度，感覺舒適。 提醒您，今日多雲為主，戶外活動請注意短時降雨，備妥雨具。 今晚明晨天氣多雲時陰，降雨機率20%，氣溫25至26度，感覺舒適。",
+      "engine": "google cse"
+    },
+    {
+      "url": "https://weather.yahoo.com/zh-hant-tw/tw/%E8%87%BA%E5%8C%97%E5%B8%82/%E8%87%BA%E5%8C%97%E5%B8%82/",
+      "title": "TW臺北市的氣象預報、天氣狀況與地圖 - Yahoo Weather",
+      "content": "臺北市 ... 雨今天最高溫31°C，最低溫24°C。 有66% 的降雨機率。 高. 31°. 低. 24°. 05 ...",
+      "engine": "google cse"
+    },
+    {
+      "url": "https://www.accuweather.com/zh/tw/taipei-city/315078/hourly-weather-forecast/315078",
+      "title": "臺北市, 台北市, 臺灣 每小時天氣 | AccuWeather",
+      "content": "天氣宜人 · 6% 大致晴朗 · 風東 8英里/小时 · 空氣品質一般 · 陣風15英里/小时 · 濕度79% 露點69° F · AccuLumen Brightness Index™0 (暗) 雲層20% 能見度6英里 · 雲冪30000英尺 · 世界 亞洲 臺灣 台北市 臺北市 ·",
+      "engine": "google cse"
+    }
+  ]
+}

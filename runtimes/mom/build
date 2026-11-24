@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# runtime 契約：建置這個 runtime。冪等，可重複執行。
+# mom 依賴 repo 內的套件（packages/*），要先建置它們，mom 才找得到型別和 dist。
+set -euo pipefail
+cd "$(dirname "$0")"
+PACKAGES=(../../packages/image-router)
+
+# 要不要（重新）npm install：還沒裝過，或 package.json／lock 檔比上次安裝新（例如 git pull 後多了依賴）。
+# npm ci 會寫 node_modules/.package-lock.json，拿它當「上次安裝」的時間點。用 ci 是照 lock 檔裝、不改寫 lock 檔
+# （npm 10 的 install 會刪掉 lock 檔的 libc 欄位，見 bin/setup.sh）。
+needs_install() {
+	local dir="$1" stamp="$1/node_modules/.package-lock.json"
+	[ ! -f "$stamp" ] || [ "$dir/package.json" -nt "$stamp" ] || [ "$dir/package-lock.json" -nt "$stamp" ]
+}
+
+for pkg in "${PACKAGES[@]}"; do
+	name="$(basename "$pkg")"
+	if needs_install "$pkg"; then
+		echo "→ 安裝 $name 的依賴…"
+		npm --prefix "$pkg" ci --no-audit --no-fund
+	fi
+	echo "→ 編譯 $name…"
+	npm --prefix "$pkg" run build --silent
+done
+
+if needs_install .; then
+	echo "→ 安裝依賴…"
+	npm ci --no-audit --no-fund
+fi
+
+echo "→ 編譯…"
+npx tsc -p tsconfig.build.json
+chmod +x dist/main.js
+echo "✓ mom 已建置：$(pwd)/dist/main.js"

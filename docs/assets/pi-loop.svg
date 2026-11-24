@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 720" width="1040" height="720" role="img" aria-label="pi agent loop 與 mom 的掛勾點">
+  <title>pi agent loop 與 mom 的掛勾點</title>
+  <style>
+    text { font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif; fill: #1f2328; }
+    .h { font-size: 15px; font-weight: 700; }
+    .hs { font-size: 13px; font-weight: 700; }
+    .t { font-size: 12px; fill: #424a53; }
+    .s { font-size: 11px; fill: #57606a; }
+    .code { font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-size: 11px; }
+    .used { fill: #dafbe1; stroke: #1a7f37; stroke-width: 1.3; }
+    .unused { fill: #ffffff; stroke: #afb8c1; stroke-width: 1.2; stroke-dasharray: 4 3; }
+    .ln { stroke: #57606a; stroke-width: 1.5; fill: none; marker-end: url(#a); }
+    .hook { stroke: #8c959f; stroke-width: 1.1; fill: none; stroke-dasharray: 3 3; }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#57606a"/></marker>
+  </defs>
+  <rect width="1040" height="720" fill="#ffffff" rx="12"/>
+
+  <!-- top: mom before loop -->
+  <rect x="20" y="16" width="1000" height="88" rx="10" fill="#f0f7ff" stroke="#0969da" stroke-width="1.5"/>
+  <text class="hs" x="36" y="38">loop 開始前（mom 在 loop 外做）</text>
+  <g>
+    <rect x="36" y="50" width="120" height="44" rx="6" fill="#fff" stroke="#54aeff"/><text class="t" x="96" y="68" text-anchor="middle">攔截指令</text><text class="code" x="96" y="85" text-anchor="middle">intercept()</text>
+    <rect x="190" y="50" width="140" height="44" rx="6" fill="#fff" stroke="#54aeff"/><text class="t" x="260" y="68" text-anchor="middle">讓出 GPU</text><text class="code" x="260" y="85" text-anchor="middle">prepareForChat()</text>
+    <rect x="363" y="50" width="140" height="44" rx="6" fill="#fff" stroke="#54aeff"/><text class="t" x="433" y="68" text-anchor="middle">補同步對話紀錄</text><text class="code" x="433" y="85" text-anchor="middle">log.jsonl → 記憶</text>
+    <rect x="537" y="50" width="140" height="44" rx="6" fill="#fff" stroke="#54aeff"/><text class="t" x="607" y="68" text-anchor="middle">重建系統提示</text><text class="code" x="607" y="85" text-anchor="middle">MEMORY.md、skill</text>
+    <rect x="710" y="50" width="120" height="44" rx="6" fill="#fff" stroke="#54aeff"/><text class="t" x="770" y="68" text-anchor="middle">加產圖提醒</text><text class="code" x="770" y="85" text-anchor="middle">turn-hint.ts</text>
+    <rect x="864" y="50" width="140" height="44" rx="6" fill="#fff" stroke="#54aeff"/><text class="t" x="934" y="68" text-anchor="middle">送出</text><text class="code" x="934" y="85" text-anchor="middle">session.prompt()</text>
+  </g>
+  <g class="ln"><line x1="156" y1="72" x2="188" y2="72"/><line x1="330" y1="72" x2="361" y2="72"/><line x1="503" y1="72" x2="535" y2="72"/><line x1="677" y1="72" x2="708" y2="72"/><line x1="830" y1="72" x2="862" y2="72"/></g>
+  <path class="ln" d="M934,94 L934,110 L500,110 L500,128"/>
+
+  <!-- left panel -->
+  <rect x="20" y="120" width="300" height="470" rx="10" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1.5"/>
+  <text class="h" x="170" y="146" text-anchor="middle">攔截點（middleware）</text>
+  <text class="s" x="170" y="164" text-anchor="middle">pi extension 可以檢查、修改或擋下</text>
+
+  <text class="hs" x="36" y="198">模型呼叫前後</text>
+  <rect class="unused" x="36" y="208" width="268" height="66" rx="6"/>
+  <text class="code" x="48" y="228">context</text><text class="s" x="112" y="228">改寫送出的 messages</text>
+  <text class="code" x="48" y="246">before_provider_request</text>
+  <text class="code" x="48" y="264">after_provider_response</text>
+  <text class="s" x="300" y="264" text-anchor="end">mom 沒用</text>
+
+  <text class="hs" x="36" y="308">tool 呼叫前後</text>
+  <rect class="unused" x="36" y="318" width="268" height="66" rx="6"/>
+  <text class="code" x="48" y="338">tool_call</text><text class="s" x="120" y="338">可擋下、改參數</text>
+  <text class="code" x="48" y="356">tool_result</text><text class="s" x="134" y="356">可改結果</text>
+  <text class="s" x="48" y="374">mom 沒用：安全靠 docker 沙箱</text>
+
+  <text class="hs" x="36" y="418">壓縮成摘要之前</text>
+  <rect class="used" x="36" y="428" width="268" height="66" rx="6"/>
+  <text class="code" x="48" y="448">session_before_compact</text>
+  <text class="t" x="48" y="467">mom：compaction-guard.ts</text>
+  <text class="s" x="48" y="484">要摘要的內容是空的就取消</text>
+
+  <text class="s" x="36" y="530">另有 session_start、model_select、</text>
+  <text class="s" x="36" y="547">user_bash 等，mom 都沒用</text>
+
+  <!-- middle loop -->
+  <rect x="350" y="130" width="340" height="460" rx="10" fill="#ffffff" stroke="#1a7f37" stroke-width="2"/>
+  <text class="h" x="500" y="156" text-anchor="middle">pi agent loop</text>
+  <text class="s" x="500" y="174" text-anchor="middle">pi-agent-core，沒有步數上限</text>
+
+  <rect x="375" y="194" width="250" height="76" rx="8" fill="#eefbf1" stroke="#1a7f37"/>
+  <text class="hs" x="500" y="220" text-anchor="middle">呼叫模型</text>
+  <text class="t" x="500" y="240" text-anchor="middle">pi-ai → ollama（OpenAI 相容 API）</text>
+  <text class="s" x="500" y="258" text-anchor="middle">失敗自動重試</text>
+
+  <rect x="375" y="306" width="250" height="96" rx="8" fill="#eefbf1" stroke="#1a7f37"/>
+  <text class="hs" x="500" y="332" text-anchor="middle">執行 tool</text>
+  <text class="code" x="500" y="352" text-anchor="middle">read bash edit write attach</text>
+  <text class="code" x="500" y="369" text-anchor="middle">search fetch generate_image</text>
+  <text class="s" x="500" y="389" text-anchor="middle">bash 在 docker 沙箱；產圖工具只排隊、立刻回傳</text>
+
+  <rect x="375" y="438" width="250" height="62" rx="8" fill="#eefbf1" stroke="#1a7f37"/>
+  <text class="hs" x="500" y="464" text-anchor="middle">回填結果</text>
+  <text class="s" x="500" y="484" text-anchor="middle">寫進 session（context.jsonl）</text>
+
+  <line class="ln" x1="500" y1="270" x2="500" y2="304"/>
+  <line class="ln" x1="500" y1="402" x2="500" y2="436"/>
+  <path class="ln" d="M625,469 C664,469 664,232 627,232"/>
+  <text class="s" x="674" y="352" text-anchor="middle" transform="rotate(90 674 352)">模型還要 tool 就再一輪</text>
+  <text class="t" x="500" y="530" text-anchor="middle">模型不再要求 tool → 結束</text>
+  <text class="s" x="500" y="552" text-anchor="middle">接近 contextWindow 時自動壓縮成摘要</text>
+  <text class="s" x="500" y="570" text-anchor="middle">使用者打 stop → 中斷</text>
+
+  <!-- hook lines left -->
+  <path class="hook" d="M304,241 L375,232"/>
+  <path class="hook" d="M304,351 L375,354"/>
+  <path class="hook" d="M304,461 C335,461 335,545 368,552"/>
+
+  <!-- right panel -->
+  <rect x="720" y="120" width="300" height="470" rx="10" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1.5"/>
+  <text class="h" x="870" y="146" text-anchor="middle">生命週期與事件</text>
+  <text class="s" x="870" y="164" text-anchor="middle">在開始、每一輪、結束時觸發</text>
+
+  <text class="hs" x="736" y="198">開始</text>
+  <rect class="unused" x="736" y="208" width="268" height="66" rx="6"/>
+  <text class="code" x="748" y="228">input  before_agent_start</text>
+  <text class="code" x="748" y="246">agent_start</text>
+  <text class="s" x="748" y="264">mom 沒用：改在 loop 外準備（上方）</text>
+
+  <text class="hs" x="736" y="308">每一輪：事件串流</text>
+  <rect class="used" x="736" y="318" width="268" height="130" rx="6"/>
+  <text class="t" x="748" y="337">mom 訂閱事件，送回 Slack：</text>
+  <text class="code" x="748" y="357">tool_execution_start/end</text>
+  <text class="s" x="760" y="373">→ 討論串（工具和結果）</text>
+  <text class="code" x="748" y="393">message_end</text>
+  <text class="s" x="760" y="409">→ 思考進討論串、回答進主頻道</text>
+  <text class="code" x="748" y="429">compaction_*  auto_retry_start</text>
+  <text class="s" x="760" y="443">→ log 和提示訊息</text>
+
+  <text class="hs" x="736" y="478">結束</text>
+  <rect class="unused" x="736" y="488" width="268" height="48" rx="6"/>
+  <text class="code" x="748" y="508">agent_end  session_shutdown</text>
+  <text class="s" x="748" y="526">mom 沒用：等佇列送完就結束這一輪</text>
+  <text class="s" x="736" y="560">（turn_start／turn_end 也沒用）</text>
+
+  <path class="hook" d="M736,241 C700,241 700,200 690,190"/>
+  <path class="hook" d="M736,383 L627,354"/>
+  <path class="hook" d="M736,512 C700,512 700,530 620,530"/>
+
+  <!-- bottom: after loop -->
+  <rect x="20" y="608" width="1000" height="96" rx="10" fill="#fff8f2" stroke="#bc4c00" stroke-width="1.5"/>
+  <text class="hs" x="36" y="632">loop 之外：產圖（packages/image-router，非同步）</text>
+  <text class="t" x="36" y="654">generate_image 或 !img 只把工作交給 supervisor。下一則訊息前，prepareForChat() 確保 sd-server 已經讓出 GPU。</text>
+  <text class="t" x="36" y="674">產完由 ImageNotifier 上傳並寫進 log.jsonl；失敗時排一個 [IMAGE_JOB_FAILED] 事件，觸發新的一輪 loop 讓 agent 說明。</text>
+  <g>
+    <rect class="used" x="700" y="626" width="16" height="12" rx="2"/><text class="s" x="722" y="636">mom 有用到</text>
+    <rect class="unused" x="800" y="626" width="16" height="12" rx="2"/><text class="s" x="822" y="636">pi 有提供、mom 沒用</text>
+  </g>
+</svg>
